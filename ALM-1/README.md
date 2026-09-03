@@ -1,7 +1,7 @@
 # ALM-1 Cryptography Client-Server Lab
 
-**Name:** Pujith Krishna Soma
-**Roll No:** 2420090069
+**Name:** Ajithesh
+**Roll No:** 2420030109
 **Section:** 11
 
 ## 1. Project Title
