@@ -74,6 +74,65 @@ def _mode_dispatch(enc_block, dec_block, block_size, plaintext, mode, iv, algo_n
     raise ValueError(f"Unknown mode: {mode}")
 
 
+def _block_funcs(algorithm, key):
+    if algorithm == "des":
+        return _des_block_funcs(key), 8
+    if algorithm == "aes256":
+        return _aes256_block_funcs(key), 16
+    raise ValueError(f"Unknown algorithm: {algorithm}")
+
+
+def decrypt(algorithm, ciphertext: bytes, key, mode="ECB", iv=None, nonce=None):
+    """Counterpart to encrypt(). Returns {algorithm, mode, plaintext}."""
+    algorithm = algorithm.lower()
+
+    if algorithm == "sdes":
+        key10 = key if isinstance(key, int) else int(key)
+        plain = bytes(sdes.decrypt_block_int(b, key10) for b in ciphertext)
+        return {"algorithm": "sdes", "mode": "N/A (single block per byte)",
+                "plaintext": plain.decode("utf-8", errors="replace")}
+
+    if algorithm == "rc4":
+        key_bytes = key if isinstance(key, (bytes, bytearray)) else bytes(key, "utf-8")
+        pt = rc4.decrypt(ciphertext, key_bytes)
+        return {"algorithm": "rc4", "mode": "stream",
+                "plaintext": pt.decode("utf-8", errors="replace")}
+
+    (enc_block, dec_block), block_size = _block_funcs(algorithm, key)
+    m = mode.upper()
+    if m == "ECB":
+        pt = modes.ecb_decrypt(ciphertext, dec_block, block_size)
+    elif m == "CBC":
+        pt = modes.cbc_decrypt(ciphertext, dec_block, block_size, iv)
+    elif m == "CFB":
+        pt = modes.cfb_decrypt(ciphertext, enc_block, block_size, iv)
+    elif m == "OFB":
+        pt = modes.ofb_decrypt(ciphertext, enc_block, block_size, iv)
+    elif m == "CTR":
+        pt = modes.ctr_decrypt(ciphertext, enc_block, block_size, nonce)
+    else:
+        raise ValueError(f"Unknown mode: {m}")
+    return {"algorithm": algorithm, "mode": m,
+            "plaintext": pt.decode("utf-8", errors="replace")}
+
+
+def roundtrip(algorithm, plaintext: bytes, key, mode="ECB"):
+    """encrypt() then decrypt() with the produced iv/nonce; reports whether they match."""
+    enc = encrypt(algorithm, plaintext, key, mode=mode)
+    iv = bytes.fromhex(enc["iv_hex"]) if "iv_hex" in enc else None
+    nonce = bytes.fromhex(enc["nonce_hex"]) if "nonce_hex" in enc else None
+    dec = decrypt(algorithm, bytes.fromhex(enc["ciphertext_hex"]), key,
+                  mode=mode, iv=iv, nonce=nonce)
+    recovered = dec["plaintext"]
+    return {
+        "algorithm": enc.get("algorithm", algorithm.lower()),
+        "mode": enc.get("mode"),
+        "ciphertext_hex": enc["ciphertext_hex"],
+        "recovered_plaintext": recovered,
+        "match": recovered == plaintext.decode("utf-8", errors="replace"),
+    }
+
+
 def compare_all_modes(algorithm, plaintext: bytes, key):
     """Run the same plaintext through all five modes - powers the block-mode visualizer."""
     results = {}

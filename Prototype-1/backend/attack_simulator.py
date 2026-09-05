@@ -49,17 +49,31 @@ def known_plaintext_rc4(ciphertext_bytes, known_plaintext_bytes):
     }
 
 
-def ecb_pattern_leakage(image_bytes, key32=None):
+def _count_duplicate_blocks(data, block_size=16):
+    blocks = [data[i:i + block_size] for i in range(0, len(data), block_size)
+             if len(data[i:i + block_size]) == block_size]
+    return len(blocks) - len(set(blocks))
+
+
+def ecb_pattern_leakage(block_repeats=8, pattern_byte=65, key32=None):
+    """Encrypt a plaintext made of `block_repeats` identical 16-byte blocks under
+    ECB (structure survives) and CTR (structure hidden), then count how many
+    16-byte ciphertext blocks are duplicates in each."""
     from Crypto.Cipher import AES
     key32 = key32 or (b"\x01" * 32)
     cipher = AES.new(key32, AES.MODE_ECB)
     enc_block = lambda b: cipher.encrypt(b.ljust(16, b"\0")[:16])
-    ecb_ct, ctr_ct = modes.ecb_leak_demo(image_bytes, enc_block, 16)
+
+    repeats = max(1, int(block_repeats))
+    plaintext = bytes([int(pattern_byte) & 0xFF]) * (16 * repeats)
+    ecb_ct, ctr_ct = modes.ecb_leak_demo(plaintext, enc_block, 16)
     return {
         "attack": "ecb_pattern_leakage",
         "target": "ECB-mode image encryption",
         "ecb_ciphertext_hex_preview": ecb_ct[:64].hex(),
         "ctr_ciphertext_hex_preview": ctr_ct[:64].hex(),
+        "ecb_repeated_blocks": _count_duplicate_blocks(ecb_ct),
+        "ctr_repeated_blocks": _count_duplicate_blocks(ctr_ct),
         "note": "Repeated plaintext blocks stay identical under ECB; CTR output is uniformly random-looking.",
         "success": True,
     }

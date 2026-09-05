@@ -3,7 +3,11 @@ import os
 import json
 import time
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "cryptoshield.db")
+# The DB location can be overridden with the CRYPTOSHIELD_DB env var (used by the
+# test-suite to point the app at a throw-away SQLite file).
+DB_PATH = os.environ.get("CRYPTOSHIELD_DB") or os.path.join(
+    os.path.dirname(__file__), "cryptoshield.db"
+)
 
 
 def get_conn():
@@ -73,3 +77,11 @@ def get_runs(user_id, limit=50):
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def clear_runs(user_id):
+    """Delete every run belonging to a single user (history 'clear' button)."""
+    conn = get_conn()
+    conn.execute("DELETE FROM runs WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
