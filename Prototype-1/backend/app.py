@@ -1,5 +1,12 @@
+import os
 import time
 import functools
+
+from dotenv import load_dotenv
+
+# Load backend/.env before anything reads os.environ (database.py picks up
+# DATABASE_URL at import time).
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
@@ -14,12 +21,33 @@ import prng_engine
 import attack_simulator
 
 app = Flask(__name__)
-app.secret_key = "change-this-secret-in-production"
+app.secret_key = os.environ.get("SECRET_KEY") or "change-this-secret-in-production"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 CORS(app, supports_credentials=True)
 
 database.init_db()
+
+
+def seed_admin():
+    """Create the demo login on startup so the console is usable immediately.
+
+    Credentials come from SEED_ADMIN_USERNAME / SEED_ADMIN_PASSWORD in .env.
+    This is a coursework convenience - it is not an access-control mechanism,
+    and the seeded account has no privileges beyond any other user.
+    """
+    username = os.environ.get("SEED_ADMIN_USERNAME")
+    password = os.environ.get("SEED_ADMIN_PASSWORD")
+    if not username or not password:
+        return
+    try:
+        if database.ensure_user(username, generate_password_hash(password)):
+            print(f" * seeded demo user '{username}' ({database.backend_name()})")
+    except Exception as e:  # never let seeding stop the server booting
+        print(f" * demo user seeding skipped: {e}")
+
+
+seed_admin()
 
 
 # ---------- response envelope helpers ----------

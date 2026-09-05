@@ -1,131 +1,180 @@
-# CryptoShield — starter implementation
+# CryptoShield
 
-This is a working starter build of the project described in your report
-(*CryptoShield: An Interactive Platform for Cryptography and Information
-Assurance*). It's real, runnable code — a Flask REST backend plus a plain
-HTML/JS console — covering every module from the report:
+An interactive platform for cryptography and information assurance — a Flask
+REST backend implementing the ciphers by hand, and a React + Vite console that
+drives every one of them.
 
-- **CryptoEngine** facade (`backend/crypto_engine.py`) — uniform encrypt/decrypt
-  over S-DES (`backend/sdes.py`, hand-written with full round trace), DES and
-  AES-256 (via PyCryptodome's raw block cipher, wrapped by your own mode logic),
-  and RC4 (`backend/rc4.py`, hand-written KSA/PRGA).
+Covers every module from the report:
+
+- **CryptoEngine** facade (`backend/crypto_engine.py`) — one uniform
+  encrypt/decrypt/round-trip interface over S-DES (`backend/sdes.py`,
+  hand-written with a full round trace), DES and AES-256 (PyCryptodome supplies
+  the raw block primitive; the mode logic is ours), and RC4 (`backend/rc4.py`,
+  hand-written KSA/PRGA).
 - **Block cipher modes** (`backend/modes.py`) — ECB/CBC/CFB/OFB/CTR implemented
   manually on top of a raw block-encrypt function.
 - **PRNG Engine** (`backend/prng_engine.py`) — LCG, Blum Blum Shub, ANSI X9.17.
 - **Attack Simulator** (`backend/attack_simulator.py`) — brute force on S-DES,
-  frequency analysis (chi-squared) on Caesar, known-plaintext keystream
-  recovery, ECB pattern-leakage demo.
-- **Auth + persistence** (`backend/database.py`) — SQLite, hashed passwords,
-  every run logged with algorithm/params/result/timing.
+  chi-squared frequency analysis on Caesar, known-plaintext keystream recovery,
+  ECB pattern-leakage demo.
+- **Auth + persistence** (`backend/database.py`) — PostgreSQL (Neon) or SQLite,
+  hashed passwords, every run logged with algorithm/params/result/timing.
 - **REST API** (`backend/app.py`) — one response envelope
   `{success, message, data}` / `{success:false, error:{code,message}}` across
-  every endpoint.
-- **Console** (`frontend/`) — a single-page app that calls the API for every
-  module.
-
-Nothing here is a mockup — every button in the console makes a real API call
-and every algorithm runs for real. That said, it's a **starter you should
-build on**, not a finished submission: see "What to extend" below.
+  every endpoint, with validation on every input.
+- **Console** (`frontend/`) — a React + Vite single-page app, one panel per
+  module, every button making a real API call.
 
 ## 1. Install prerequisites (one time)
 
-1. Install **Python 3.10+** from [python.org](https://python.org) if you
-   don't have it. During install on Windows, tick "Add Python to PATH".
-2. Install **VS Code** and open this `cryptoshield` folder in it
-   (`File > Open Folder`).
-3. Open a terminal inside VS Code: `` Terminal > New Terminal ``.
+1. **Python 3.10+** from [python.org](https://python.org). On Windows, tick
+   "Add Python to PATH" during install.
+2. **Node.js 18+** from [nodejs.org](https://nodejs.org).
+3. Open this `Prototype-1` folder in VS Code (`File > Open Folder`).
 
-## 2. Set up and run the backend
+## 2. Configure the backend
 
-In the VS Code terminal:
+```bash
+cd backend
+cp .env.example .env      # Windows: copy .env.example .env
+```
+
+Then edit `.env`:
+
+- `DATABASE_URL` — your Postgres connection string (e.g. a Neon database).
+  **Leave it unset and the app falls back to a local SQLite file**, no setup
+  needed.
+- `SECRET_KEY` — Flask session signing key.
+- `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` — a demo login created on
+  startup so the console is usable immediately. Remove both to disable.
+
+`.env` is gitignored — never commit it.
+
+## 3. Run the backend
 
 ```bash
 cd backend
 python -m venv venv
 
-# activate the virtual environment
 source venv/bin/activate        # macOS/Linux
-venv\Scripts\activate           # Windows (cmd/PowerShell)
+venv\Scripts\activate           # Windows
 
 pip install -r requirements.txt
 python app.py
 ```
 
-You should see Flask start on `http://127.0.0.1:5000`. Leave this terminal
-running — it's your live backend.
+Flask starts on `http://127.0.0.1:5000`. Leave this terminal running.
 
-## 3. Run the frontend
+## 4. Run the frontend
 
-Open a **second** terminal in VS Code (`+` icon in the terminal panel):
+In a **second** terminal:
 
 ```bash
 cd frontend
-python -m http.server 5500
+npm install
+npm run dev
 ```
 
-Then open **http://127.0.0.1:5500** in your browser. (Opening `index.html`
-by double-clicking also mostly works, but serving it avoids browser
-file:// restrictions.)
+Open **http://localhost:5173**. The Vite dev server proxies `/api` to Flask on
+port 5000, so the session cookie is same-origin and CORS never comes into play.
 
-## 4. Use it
+## 5. Use it
 
-1. Register a username/password, then log in.
-2. Walk through the tabs: Classical Lab → S-DES (note the round-by-round
-   trace in the JSON output) → DES/AES/RC4 → Block Modes → PRNG → Attack
-   Simulator → Run History (every call you make is logged to SQLite and
-   shown here).
+Log in with the seeded demo account (or register your own), then walk the tabs:
+Classical Lab → S-DES → DES/AES/RC4 → Block Modes → PRNG → Attack Simulator →
+Run History. Every call you make is logged and shows up under Run History.
+
+## Running the tests
+
+Backend (37 tests — round-trip correctness, attacks, auth, validation):
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+The suite points `CRYPTOSHIELD_DB` at a throw-away SQLite file per test, so it
+never touches your real database — even when `DATABASE_URL` is set.
+
+Frontend (15 tests — API client, hex helpers, auth gate, panels):
+
+```bash
+cd frontend
+npm run test
+npm run build
+```
 
 ## Project layout
 
 ```
-cryptoshield/
+Prototype-1/
   backend/
-    app.py              REST API + auth + response envelope
-    crypto_engine.py    facade: encrypt(algorithm, plaintext, key, mode)
-    sdes.py             hand-written S-DES with full step trace
-    rc4.py              hand-written RC4 KSA/PRGA
-    classical.py        Caesar + Playfair + frequency attack
-    modes.py            ECB/CBC/CFB/OFB/CTR built on a raw block-encrypt fn
+    app.py               REST API, auth, validation, response envelope
+    crypto_engine.py     facade: encrypt / decrypt / roundtrip
+    sdes.py              hand-written S-DES with full step trace
+    rc4.py               hand-written RC4 KSA/PRGA
+    classical.py         Caesar + Playfair + frequency attack
+    modes.py             ECB/CBC/CFB/OFB/CTR on a raw block-encrypt fn
     prng_engine.py       LCG, BBS, ANSI X9.17
-    attack_simulator.py brute force / frequency / known-plaintext / ECB leak
-    database.py          SQLite: users + run history
-    requirements.txt
-  frontend/
-    index.html
-    app.js               fetch() calls into the REST API
-    style.css
+    attack_simulator.py  brute force / frequency / known-plaintext / ECB leak
+    database.py          Postgres or SQLite: users + run history
+    requirements.txt     runtime deps
+    requirements-dev.txt pytest
+    .env.example         config template (.env itself is gitignored)
+  frontend/              React + Vite console
+    src/api/client.js    fetch wrapper, envelope unwrapping, ApiError
+    src/auth/            auth context + login gate
+    src/panels/          one panel per module
+    src/components/      trace visualiser, charts, layout, shared UI
+    vite.config.js       dev proxy /api -> 127.0.0.1:5000
+  frontend-legacy/       the original plain HTML/JS console, kept for reference
+  tests/                 pytest suite for the backend
 ```
 
-## What to extend before submitting
+## API
 
-The report promises more than a starter can responsibly hand you in one
-shot — treat these as your next milestones, and they map directly onto
-report sections so you can cite what you built against what you designed:
+All endpoints are under `/api` and return the envelope described above.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/auth/register`, `/auth/login`, `/auth/logout` | session auth |
+| GET | `/auth/me` | current session |
+| POST | `/classical/caesar` | encrypt/decrypt via `action`, with frequency maps |
+| POST | `/classical/caesar/attack` | chi-squared attack over all 26 shifts |
+| POST | `/classical/playfair` | encrypt/decrypt + 5×5 key square |
+| POST | `/sdes/encrypt`, `/sdes/decrypt` | S-DES with round-by-round trace |
+| POST | `/crypto/encrypt`, `/crypto/decrypt`, `/crypto/roundtrip` | DES / AES-256 / RC4 |
+| POST | `/modes/compare` | all five modes + ECB repeated-block analysis |
+| POST | `/prng/lcg`, `/prng/bbs`, `/prng/ansi` | the three generators |
+| POST | `/attack/bruteforce`, `/attack/frequency`, `/attack/known-plaintext`, `/attack/ecb-leakage` | attack simulator |
+| GET / DELETE | `/runs` | run history, and clearing it |
+
+## What to extend further
+
+These map onto report sections, so you can cite what you built against what you
+designed:
 
 - **Full DES from scratch** (Section 4.3): this build uses PyCryptodome's DES
-  primitive as the raw block-encrypt step (your own mode logic still wraps
-  it). If your report claims a from-scratch Feistel implementation, port the
-  S-DES style (`sdes.py`) up to 16 rounds with the real PC-1/PC-2/E/S-box
-  tables from FIPS-46.
-- **Step-by-step viewers for DES/AES rounds** (Figures 5–6): `sdes.py`
-  already returns a full trace dict per round; do the same for DES/AES if
-  you want the round-by-round visualizer the report describes, rather than
-  only the S-DES one.
-- **Known-plaintext / ECB-leakage against images** (Figure 7, Section 3.4):
-  the current demo uses a synthetic byte pattern. Swap in real image bytes
-  (e.g. load a bitmap, strip the header, encrypt the raw pixel data) for the
-  visual "recognizable under ECB" effect the report describes.
-- **Authenticated modes / GCM** — listed as future work (10.3); not
-  implemented here, consistent with the report.
-- **Tests** (Section 9.1): add `pytest` tests asserting `Dk(Ek(m)) == m` for
-  every cipher/mode combination — the round-trip property the report cites
-  as the central correctness check.
+  primitive as the raw block-encrypt step (our own mode logic wraps it). If the
+  report claims a from-scratch Feistel implementation, port the `sdes.py` style
+  up to 16 rounds with the real PC-1/PC-2/E/S-box tables from FIPS-46.
+- **Step-by-step viewers for DES/AES rounds** (Figures 5–6): `sdes.py` returns a
+  full trace dict per round and the console renders it; do the same for DES/AES
+  if you want those visualisers too.
+- **ECB leakage against real images** (Figure 7, Section 3.4): the demo uses a
+  synthetic repeating byte pattern. Swap in real image bytes (load a bitmap,
+  strip the header, encrypt the raw pixels) for the visual effect.
+- **Authenticated modes / GCM** — listed as future work (10.3); not implemented,
+  consistent with the report.
 
 ## Notes
 
-- DES, S-DES and RC4 are implemented for the **educational** purpose the
-  report describes (teaching structure/weaknesses); they are not secure and
-  should never be used to protect real data. AES-256 is the only
-  production-appropriate cipher in this codebase.
-- The Flask `secret_key` in `app.py` and the demo AES keys in `attack_simulator.py`
-  are placeholders — never reuse them outside this coursework project.
+- DES, S-DES and RC4 are implemented for the **educational** purpose the report
+  describes (teaching structure and weaknesses); they are not secure and should
+  never protect real data. AES-256 is the only production-appropriate cipher
+  here.
+- The seeded demo login is a coursework convenience, not an access-control
+  mechanism — it has no privileges beyond any other account. Don't ship it.
+- Demo keys in `attack_simulator.py` are placeholders. Never reuse any
+  credential from this project outside the coursework.
