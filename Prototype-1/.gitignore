@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/venv/
+backend/.venv/
+backend/cryptoshield.db
+
+# Node / Vite
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend-legacy/node_modules/
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
