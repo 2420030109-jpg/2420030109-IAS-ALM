@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CryptoShield Console</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>🛡️ CryptoShield</h1>
+  <div id="authbar">
+    <span id="whoami"></span>
+    <button id="logoutBtn" class="hidden">Log out</button>
+  </div>
+</header>
+
+<section id="authSection">
+  <div class="card">
+    <h2>Login / Register</h2>
+    <input id="username" placeholder="username">
+    <input id="password" type="password" placeholder="password">
+    <button onclick="doLogin()">Login</button>
+    <button onclick="doRegister()">Register</button>
+    <p id="authMsg"></p>
+  </div>
+</section>
+
+<nav id="tabs" class="hidden">
+  <button data-tab="classical" class="active">Classical Lab</button>
+  <button data-tab="sdes">S-DES</button>
+  <button data-tab="engine">DES / AES / RC4</button>
+  <button data-tab="modes">Block Modes</button>
+  <button data-tab="prng">PRNG</button>
+  <button data-tab="attacks">Attack Simulator</button>
+  <button data-tab="history">Run History</button>
+</nav>
+
+<main id="app" class="hidden">
+
+  <div class="tab-panel" id="tab-classical">
+    <h2>Classical Cipher Lab</h2>
+    <div class="card">
+      <h3>Caesar</h3>
+      <input id="caesarText" placeholder="plaintext" value="ATTACKATDAWN">
+      <input id="caesarShift" type="number" placeholder="shift" value="3">
+      <button onclick="runCaesar()">Encrypt</button>
+      <pre id="caesarOut"></pre>
+    </div>
+    <div class="card">
+      <h3>Playfair</h3>
+      <input id="pfText" placeholder="plaintext" value="HELLOWORLD">
+      <input id="pfKey" placeholder="key" value="MONARCHY">
+      <button onclick="runPlayfair()">Encrypt</button>
+      <pre id="pfOut"></pre>
+    </div>
+  </div>
+
+  <div class="tab-panel hidden" id="tab-sdes">
+    <h2>S-DES: Round-by-Round Trace</h2>
+    <div class="card">
+      <input id="sdesText" placeholder="text (first byte is traced)" value="Hi">
+      <input id="sdesKey" type="number" placeholder="10-bit key (0-1023)" value="642">
+      <button onclick="runSdes()">Encrypt</button>
+      <pre id="sdesOut"></pre>
+    </div>
+  </div>
+
+  <div class="tab-panel hidden" id="tab-engine">
+    <h2>CryptoEngine — DES / AES-256 / RC4</h2>
+    <div class="card">
+      <select id="engAlgo">
+        <option value="des">DES</option>
+        <option value="aes256" selected>AES-256</option>
+        <option value="rc4">RC4</option>
+      </select>
+      <select id="engMode">
+        <option>ECB</option><option>CBC</option><option>CFB</option><option>OFB</option><option>CTR</option>
+      </select>
+      <input id="engText" placeholder="plaintext" value="Attack at dawn!">
+      <input id="engKey" placeholder="key (hex for DES/AES, text for RC4)" value="00112233445566778899aabbccddeeff00112233445566778899aabbccddee">
+      <button onclick="runEngine()">Encrypt</button>
+      <pre id="engOut"></pre>
+    </div>
+  </div>
+
+  <div class="tab-panel hidden" id="tab-modes">
+    <h2>Block Mode Visualizer</h2>
+    <div class="card">
+      <input id="modesText" placeholder="plaintext" value="THE SAME BLOCK REPEATS THE SAME BLOCK REPEATS!!">
+      <input id="modesKey" placeholder="AES-256 key (hex, 64 chars)" value="00112233445566778899aabbccddeeff00112233445566778899aabbccddee">
+      <button onclick="runModesCompare()">Compare all 5 modes</button>
+      <pre id="modesOut"></pre>
+    </div>
+  </div>
+
+  <div class="tab-panel hidden" id="tab-prng">
+    <h2>PRNG Engine</h2>
+    <div class="card">
+      <h3>LCG</h3>
+      <input id="lcgSeed" type="number" value="7"><input id="lcgN" type="number" value="15">
+      <button onclick="runLcg()">Generate</button><pre id="lcgOut"></pre>
+    </div>
+    <div class="card">
+      <h3>Blum Blum Shub</h3>
+      <input id="bbsSeed" type="number" value="3"><input id="bbsN" type="number" value="15">
+      <button onclick="runBbs()">Generate</button><pre id="bbsOut"></pre>
+    </div>
+    <div class="card">
+      <h3>ANSI X9.17</h3>
+      <button onclick="runAnsi()">Generate</button><pre id="ansiOut"></pre>
+    </div>
+  </div>
+
+  <div class="tab-panel hidden" id="tab-attacks">
+    <h2>Attack Simulator</h2>
+    <div class="card">
+      <h3>Brute force S-DES</h3>
+      <p class="hint">Uses the ciphertext from the S-DES tab (run that first).</p>
+      <input id="bfKnownByte" type="number" placeholder="known first plaintext byte (e.g. 72 for 'H')" value="72">
+      <button onclick="runBruteForce()">Attack</button><pre id="bfOut"></pre>
+    </div>
+    <div class="card">
+      <h3>ECB pattern leakage</h3>
+      <button onclick="runEcbLeak()">Run demo</button><pre id="ecbOut"></pre>
+    </div>
+  </div>
+
+  <div class="tab-panel hidden" id="tab-history">
+    <h2>Run History</h2>
+    <button onclick="loadHistory()">Refresh</button>
+    <pre id="historyOut"></pre>
+  </div>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
