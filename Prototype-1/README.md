@@ -97,7 +97,7 @@ python -m pytest -q
 The suite points `CRYPTOSHIELD_DB` at a throw-away SQLite file per test, so it
 never touches your real database — even when `DATABASE_URL` is set.
 
-Frontend (15 tests — API client, hex helpers, auth gate, panels):
+Frontend (20 tests — API client, hex helpers, auth gate, panels):
 
 ```bash
 cd frontend
@@ -128,7 +128,6 @@ Prototype-1/
     src/panels/          one panel per module
     src/components/      trace visualiser, charts, layout, shared UI
     vite.config.js       dev proxy /api -> 127.0.0.1:5000
-  frontend-legacy/       the original plain HTML/JS console, kept for reference
   tests/                 pytest suite for the backend
 ```
 
