@@ -24,6 +24,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or "change-this-secret-in-production"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
+# Preserve dict insertion order in responses - the S-DES trace is built in
+# execution order and the frontend renders it as a pipeline.
+app.json.sort_keys = False
 CORS(app, supports_credentials=True)
 
 database.init_db()

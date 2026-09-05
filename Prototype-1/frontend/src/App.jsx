@@ -11,21 +11,36 @@ import PrngPanel from './panels/PrngPanel.jsx'
 import AttackPanel from './panels/AttackPanel.jsx'
 import HistoryPanel from './panels/HistoryPanel.jsx'
 
-const TABS = [
-  { id: 'classical', label: 'Classical Lab', El: ClassicalPanel },
-  { id: 'sdes', label: 'S-DES', El: SdesPanel },
-  { id: 'crypto', label: 'DES / AES / RC4', El: CryptoPanel },
-  { id: 'modes', label: 'Block Modes', El: ModesPanel },
-  { id: 'prng', label: 'PRNG', El: PrngPanel },
-  { id: 'attacks', label: 'Attack Simulator', El: AttackPanel },
-  { id: 'history', label: 'Run History', El: HistoryPanel },
+const GROUPS = [
+  {
+    label: 'Ciphers',
+    tabs: [
+      { id: 'classical', label: 'Classical Lab', icon: '🔤', El: ClassicalPanel },
+      { id: 'sdes', label: 'S-DES', icon: '🧩', El: SdesPanel },
+      { id: 'crypto', label: 'DES / AES / RC4', icon: '🔐', El: CryptoPanel },
+      { id: 'modes', label: 'Block Modes', icon: '🧱', El: ModesPanel },
+    ],
+  },
+  {
+    label: 'Analysis',
+    tabs: [
+      { id: 'prng', label: 'PRNG', icon: '🎲', El: PrngPanel },
+      { id: 'attacks', label: 'Attack Simulator', icon: '💥', El: AttackPanel },
+    ],
+  },
+  {
+    label: 'Session',
+    tabs: [{ id: 'history', label: 'Run History', icon: '📜', El: HistoryPanel }],
+  },
 ]
+
+const ALL_TABS = GROUPS.flatMap((g) => g.tabs)
 
 function Console() {
   const [active, setActive] = useState('classical')
-  const Active = TABS.find((t) => t.id === active)?.El ?? ClassicalPanel
+  const Active = ALL_TABS.find((t) => t.id === active)?.El ?? ClassicalPanel
   return (
-    <Layout tabs={TABS} active={active} onSelect={setActive}>
+    <Layout groups={GROUPS} active={active} onSelect={setActive}>
       <Active />
     </Layout>
   )
